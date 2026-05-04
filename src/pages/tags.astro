@@ -1,0 +1,73 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+
+const posts = await getCollection('blog', ({ data }) => !data.draft);
+
+const counts = new Map<string, number>();
+for (const post of posts) {
+  for (const tag of post.data.tags) {
+    counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+}
+
+const entries = [...counts.entries()].sort((a, b) =>
+  b[1] - a[1] || a[0].localeCompare(b[0], 'zh')
+);
+
+const max = entries.length ? entries[0][1] : 0;
+const min = entries.length ? entries[entries.length - 1][1] : 0;
+const sizeFor = (n: number) => {
+  if (max === min) return 'text-2xl';
+  const t = (n - min) / (max - min);
+  if (t > 0.75) return 'text-4xl md:text-5xl';
+  if (t > 0.5)  return 'text-3xl md:text-4xl';
+  if (t > 0.25) return 'text-2xl md:text-3xl';
+  return 'text-xl md:text-2xl';
+};
+
+const total = posts.length;
+const tagTotal = entries.length;
+---
+<BaseLayout title="标签" description="所有博客文章中出现过的标签及其计数">
+  <section class="container-wide pt-16 pb-12 border-b border-paper-edge">
+    <p class="eyebrow reveal reveal-1">The Tag Index</p>
+    <div class="mt-3 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+      <h1 class="font-display italic text-[clamp(2.5rem,6vw,5rem)] leading-none tracking-tightest reveal reveal-2"
+          style="font-variation-settings:'opsz' 144,'SOFT' 30">
+        Tags
+      </h1>
+      <p class="num text-xs reveal reveal-3 md:text-right">
+        {String(tagTotal).padStart(2, '0')} 个标签 · {String(total).padStart(2, '0')} 篇文章
+      </p>
+    </div>
+  </section>
+
+  <section class="container-wide py-10 max-w-3xl">
+    {entries.length === 0 ? (
+      <p class="py-16 text-center text-ink-mute italic">
+        还没有标签。在文章 frontmatter 的 <code>tags:</code> 里添加任意词即可。
+      </p>
+    ) : (
+      <ul class="divide-y divide-paper-edge">
+        {entries.map(([tag, count], i) => (
+          <li
+            class="grid grid-cols-[auto_1fr_auto] items-baseline gap-5 py-5 reveal"
+            style={`animation-delay:${0.04 + i * 0.04}s`}
+          >
+            <span class="num text-sm text-ink-mute">{String(i + 1).padStart(2, '0')}</span>
+            <span
+              class={`font-display italic tracking-tightest text-ink ${sizeFor(count)}`}
+              style="font-variation-settings:'opsz' 96,'SOFT' 30"
+            >
+              {tag}
+            </span>
+            <span class="num text-base text-ink-soft whitespace-nowrap">
+              × {String(count).padStart(2, '0')}
+            </span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</BaseLayout>

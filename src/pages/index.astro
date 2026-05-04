@@ -1,0 +1,75 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Hero from '~/components/Hero.astro';
+import InfoSection from '~/components/InfoSection.astro';
+import { profile } from '~/data/profile';
+---
+<BaseLayout title={profile.name || '主页'} description={profile.bio}>
+  <Hero />
+
+  <section class="container-wide py-16 max-w-3xl">
+    <div class="space-y-10">
+      <div class="reveal reveal-1">
+        <InfoSection title="教育经历" index="I.">
+          {profile.education.length === 0 ? null : (
+            <ul class="space-y-5">
+              {profile.education.map(e => (
+                <li class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-x-6 gap-y-1 items-baseline">
+                  <span class="font-display text-xl text-ink tracking-tightest">{e.school}</span>
+                  <span class="num text-xs sm:text-right whitespace-nowrap">{e.period}</span>
+                  <span class="text-ink-mute text-xs uppercase tracking-wider">{e.degree}</span>
+                  {e.detail && <p class="sm:col-span-2 mt-1 text-ink-soft leading-relaxed">{e.detail}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </InfoSection>
+      </div>
+
+      <div class="reveal reveal-2">
+        <InfoSection title="项目经历" index="II.">
+          {profile.projects.length === 0 ? null : (
+            <ul class="space-y-6">
+              {profile.projects.map(p => (
+                <li class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-x-6 gap-y-1 items-baseline">
+                  <span class="font-display text-xl text-ink tracking-tightest">
+                    {p.link ? <a href={p.link} target="_blank" rel="noopener">{p.name} ↗</a> : p.name}
+                  </span>
+                  {p.period && <span class="num text-xs sm:text-right whitespace-nowrap">{p.period}</span>}
+                  <p class="sm:col-span-2 text-ink-soft leading-relaxed">{p.description}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </InfoSection>
+      </div>
+
+      <div class="reveal reveal-3">
+        <InfoSection title="个人爱好" index="III.">
+          {profile.hobbies.length === 0 ? null : (
+            <ul class="flex flex-wrap gap-2">
+              {profile.hobbies.map(h => <li class="pill">{h}</li>)}
+            </ul>
+          )}
+        </InfoSection>
+      </div>
+
+      <div class="reveal reveal-4">
+        <InfoSection title="联系方式" index="IV.">
+          {profile.contacts.length === 0 ? null : (
+            <ul class="divide-y divide-paper-edge">
+              {profile.contacts.map(c => (
+                <li class="flex items-baseline justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
+                  <span class="eyebrow">{c.type}</span>
+                  {c.link
+                    ? <a href={c.link} class="font-display italic text-lg tracking-tightest text-right break-all">{c.value}</a>
+                    : <span class="font-display italic text-lg text-ink tracking-tightest text-right break-all">{c.value}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </InfoSection>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

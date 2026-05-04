@@ -1,0 +1,32 @@
+---
+// 顶部 2px 伪进度条 + 内容淡入
+---
+<div id="lb" class="fixed top-0 left-0 right-0 h-[2px] z-50 pointer-events-none">
+  <div id="lb-bar" class="h-full bg-accent w-0 transition-[width] duration-300 ease-out"></div>
+</div>
+<script is:inline>
+(() => {
+  const bar = document.getElementById('lb-bar');
+  const wrap = document.getElementById('lb');
+  if (!bar || !wrap) return;
+  let p = 0;
+  const tick = () => { p = Math.min(72, p + Math.random() * 18); bar.style.width = p + '%'; };
+  const t1 = setTimeout(tick, 30);
+  const t2 = setTimeout(tick, 180);
+  const t3 = setTimeout(tick, 360);
+  const finish = () => {
+    clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+    bar.style.width = '100%';
+    setTimeout(() => { wrap.style.opacity = '0'; }, 180);
+    setTimeout(() => { wrap.style.display = 'none'; }, 450);
+    document.body.classList.add('page-ready');
+  };
+  if (document.readyState === 'complete') finish();
+  else window.addEventListener('load', finish, { once: true });
+})();
+</script>
+<style>
+  body:not(.page-ready) main { opacity: 0; transform: translateY(10px); }
+  main { transition: opacity .45s ease-out, transform .45s ease-out; }
+  #lb { transition: opacity .25s ease-out; }
+</style>

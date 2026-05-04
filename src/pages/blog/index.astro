@@ -1,0 +1,46 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import ArticleCard from '~/components/ArticleCard.astro';
+import SearchBox from '~/components/SearchBox.astro';
+import { url } from '~/utils/url';
+
+const posts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+<BaseLayout title="博客" description="文章列表">
+  <section class="container-wide pt-16 pb-12 border-b border-paper-edge">
+    <p class="eyebrow reveal reveal-1">The Index</p>
+    <div class="mt-3 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+      <h1 class="font-display italic text-[clamp(2.5rem,6vw,5rem)] leading-none tracking-tightest reveal reveal-2"
+          style="font-variation-settings:'opsz' 144,'SOFT' 30">
+        Writings
+      </h1>
+      <div class="w-full md:max-w-sm reveal reveal-3">
+        <SearchBox />
+      </div>
+    </div>
+    <p class="mt-4 num text-xs reveal reveal-3">{String(posts.length).padStart(2, '0')} pieces · sorted by date</p>
+  </section>
+
+  <section class="container-wide py-6">
+    {posts.length === 0 ? (
+      <p class="py-16 text-center text-ink-mute italic">还没有文章。复制 src/content/blog/_template.md 开始第一篇。</p>
+    ) : (
+      <ul>
+        {posts.map((p, i) => (
+          <li class="reveal" style={`animation-delay:${0.05 + i * 0.05}s`}>
+            <ArticleCard
+              href={url(`/blog/${p.slug}`)}
+              title={p.data.title}
+              date={p.data.date}
+              summary={p.data.summary}
+              tags={p.data.tags}
+              index={posts.length - i}
+            />
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</BaseLayout>

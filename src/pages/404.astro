@@ -1,0 +1,17 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { url } from '~/utils/url';
+---
+<BaseLayout title="未找到">
+  <section class="container-wide py-32 text-center">
+    <p class="font-display italic text-[12rem] leading-none text-accent tracking-tightest"
+       style="font-variation-settings:'opsz' 144,'SOFT' 30">404</p>
+    <p class="eyebrow mt-6">Page Not Found</p>
+    <h1 class="mt-3 font-display text-3xl italic tracking-tightest"
+        style="font-variation-settings:'opsz' 72,'SOFT' 30">
+      这一页不在书架上。
+    </h1>
+    <p class="mt-3 text-ink-soft">链接可能失效了，或者你只是拼错了字。</p>
+    <a href={url('/')} class="btn-quiet mt-8"><span class="num text-[11px]">←</span><span>回到主页</span></a>
+  </section>
+</BaseLayout>

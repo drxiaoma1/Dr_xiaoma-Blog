@@ -1,0 +1,44 @@
+---
+import { profile } from '~/data/profile';
+import { url } from '~/utils/url';
+const avatarPng = url(profile.avatar);
+const avatarSvg = url(profile.avatarFallback);
+const today = new Date();
+const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+const issue = String(today.getFullYear() - 2020).padStart(2, '0');
+---
+<section class="container-wide pt-16 pb-12 border-b border-paper-edge">
+  <div class="flex items-center justify-between text-xs text-ink-mute uppercase tracking-[0.22em] font-sans reveal reveal-1">
+    <span>Issue №{issue}</span>
+    <span class="hidden sm:inline">{dateStr}</span>
+    <span>{profile.location}</span>
+  </div>
+
+  <div class="mt-10 grid grid-cols-1 md:grid-cols-12 gap-10 items-end">
+    <div class="md:col-span-3 reveal reveal-2">
+      <div class="relative inline-block">
+        <img
+          src={avatarPng}
+          alt={profile.name}
+          width="220" height="220"
+          class="w-44 h-44 md:w-52 md:h-52 rounded-full object-cover border border-paper-edge grayscale-[0.08] shadow-[0_2px_24px_rgba(26,23,20,0.08)]"
+          onerror={`if (this.src.endsWith('png')) this.src='${avatarSvg}'; else this.onerror=null;`}
+        />
+        <span class="absolute -bottom-2 -right-2 bg-paper-card border border-paper-edge px-2 py-0.5 num text-[11px] text-ink-soft">01</span>
+      </div>
+    </div>
+
+    <div class="md:col-span-9 reveal reveal-3">
+      <p class="eyebrow">A personal journal · @{profile.handle}</p>
+      <h1 class="mt-3 font-display italic text-[clamp(3rem,7vw,6.5rem)] leading-[0.95] tracking-tightest text-ink"
+          style="font-variation-settings:'opsz' 144,'SOFT' 30">
+        {profile.name}
+      </h1>
+      <p class="mt-4 font-display not-italic text-xl text-ink-soft max-w-2xl"
+         style="font-variation-settings:'opsz' 24">
+        — {profile.tagline}
+      </p>
+      <p class="mt-6 text-ink-soft max-w-2xl leading-relaxed">{profile.bio}</p>
+    </div>
+  </div>
+</section>

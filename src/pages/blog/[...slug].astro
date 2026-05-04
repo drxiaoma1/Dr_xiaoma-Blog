@@ -1,0 +1,84 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { url } from '~/utils/url';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map(p => ({ params: { slug: p.slug }, props: { post: p } }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await post.render();
+const dateStr = post.data.date.toISOString().slice(0, 10);
+const toc = headings.filter(h => h.depth === 2 || h.depth === 3);
+---
+<BaseLayout title={post.data.title} description={post.data.summary}>
+  <article class="container-prose py-16" data-pagefind-body>
+    <header class="mb-12 reveal reveal-1">
+      <p class="eyebrow">An Entry</p>
+      <h1 class="mt-3 font-display italic text-[clamp(2.2rem,5vw,4rem)] leading-[1] tracking-tightest"
+          data-pagefind-meta="title"
+          style="font-variation-settings:'opsz' 144,'SOFT' 30">
+        {post.data.title}
+      </h1>
+      <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">
+        <time class="num">{dateStr}</time>
+        <span class="rule flex-1 max-w-[80px]"></span>
+        {post.data.tags.map(t => <span class="pill">{t}</span>)}
+      </div>
+    </header>
+
+    {toc.length > 0 && (
+      <nav class="mb-12 pl-4 border-l border-paper-edge reveal reveal-2" aria-label="目录">
+        <p class="eyebrow">Contents</p>
+        <ul class="mt-3 text-sm space-y-1.5">
+          {toc.map((h, i) => (
+            <li class={h.depth === 3 ? 'pl-5' : ''}>
+              <a href={`#${h.slug}`} class="no-underline text-ink-soft hover:text-accent">
+                <span class="num text-xs mr-2">{String(i + 1).padStart(2, '0')}</span>{h.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+
+    <div class="prose prose-lg max-w-none reveal reveal-3
+                prose-headings:scroll-mt-24
+                prose-pre:shadow-none">
+      <Content />
+    </div>
+
+    <footer class="mt-16 pt-8 border-t border-paper-edge flex flex-wrap items-center gap-3 reveal reveal-4">
+      <button id="share-copy" class="btn-quiet">
+        <span class="num text-[11px]">§</span><span>复制链接</span>
+      </button>
+      <button id="share-native" class="btn-quiet hidden">
+        <span class="num text-[11px]">§</span><span>分享</span>
+      </button>
+      <a href={url('/blog')} class="btn-quiet ml-auto">
+        <span>← 回到目录</span>
+      </a>
+      <span id="share-tip" class="text-xs text-ink-mute"></span>
+    </footer>
+  </article>
+
+  <script is:inline>
+    (() => {
+      const tip = document.getElementById('share-tip');
+      const copy = document.getElementById('share-copy');
+      const nat = document.getElementById('share-native');
+      const url = location.href;
+      copy?.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(url); tip.textContent = '✓ 已复制'; }
+        catch { tip.textContent = '复制失败'; }
+        setTimeout(() => tip.textContent = '', 2000);
+      });
+      if (navigator.share && nat) {
+        nat.classList.remove('hidden');
+        nat.addEventListener('click', () => navigator.share({ url, title: document.title }).catch(() => {}));
+      }
+    })();
+  </script>
+</BaseLayout>

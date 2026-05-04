@@ -1,0 +1,70 @@
+---
+// 在生产构建后由 pagefind 生成 /pagefind/pagefind.js
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<div class="relative">
+  <div class="flex items-center gap-2 border-b border-ink/40 focus-within:border-accent transition-colors">
+    <span class="num text-xs text-ink-mute">⌕</span>
+    <input id="q" type="search" placeholder="search writings…"
+           class="w-full py-2 bg-transparent outline-none text-sm font-sans placeholder:text-ink-mute/60" />
+    <span id="q-count" class="num text-[10px] text-ink-mute"></span>
+  </div>
+  <ul id="results" class="hidden absolute top-full left-0 right-0 mt-2 bg-paper-card border border-paper-edge shadow-[0_12px_40px_rgba(26,23,20,0.08)] max-h-80 overflow-auto z-30"></ul>
+</div>
+<script is:inline define:vars={{ base }}>
+(async () => {
+  const input = document.getElementById('q');
+  const list  = document.getElementById('results');
+  const count = document.getElementById('q-count');
+  if (!input || !list) return;
+
+  let pf = null;
+  const ensure = async () => {
+    if (pf) return pf;
+    try {
+      pf = await import(`${base}/pagefind/pagefind.js`);
+      await pf.options({ baseUrl: base + '/' });
+      await pf.init();
+    } catch (e) { console.warn('Pagefind unavailable in dev:', e); }
+    return pf;
+  };
+
+  const render = (items, total) => {
+    count.textContent = total ? `${total} 条` : '';
+    if (!items.length) {
+      list.innerHTML = '<li class="px-4 py-3 text-sm text-ink-mute italic">没有匹配的文章。</li>';
+    } else {
+      list.innerHTML = items.map(d => `
+        <li class="border-b border-paper-edge last:border-b-0">
+          <a class="block px-4 py-3 no-underline hover:bg-paper/60 transition-colors" href="${d.url}">
+            <div class="font-display text-base text-ink tracking-tightest">${d.meta?.title ?? d.url}</div>
+            <div class="text-ink-mute text-xs mt-1 leading-relaxed">${d.excerpt}</div>
+          </a>
+        </li>`).join('');
+    }
+    list.classList.remove('hidden');
+  };
+
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (!q) { list.classList.add('hidden'); list.innerHTML=''; count.textContent=''; return; }
+    timer = setTimeout(async () => {
+      const lib = await ensure();
+      if (!lib) {
+        list.innerHTML = '<li class="px-4 py-3 text-xs text-ink-mute italic">本地开发模式下搜索索引尚未生成，请运行 pnpm build && pnpm preview 验证。</li>';
+        list.classList.remove('hidden'); return;
+      }
+      const search = await lib.search(q);
+      const items = await Promise.all(search.results.slice(0, 8).map(r => r.data()));
+      render(items, search.results.length);
+    }, 120);
+  });
+
+  document.addEventListener('click', e => {
+    if (!list.contains(e.target) && e.target !== input) list.classList.add('hidden');
+  });
+  input.addEventListener('focus', () => { if (list.innerHTML) list.classList.remove('hidden'); });
+})();
+</script>
