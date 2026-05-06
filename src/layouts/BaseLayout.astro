@@ -24,5 +24,40 @@ const { title = '个人博客', description = '一个浅色系现代简约的编
       <slot />
     </main>
     <Footer />
+    <script is:inline>
+      (() => {
+        const COPY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        const CHECK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        document.querySelectorAll('.prose pre').forEach((pre) => {
+          if (pre.dataset.copyReady) return;
+          pre.dataset.copyReady = '1';
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'copy-btn';
+          btn.setAttribute('aria-label', '复制代码');
+          btn.innerHTML = COPY_SVG;
+          btn.addEventListener('click', async () => {
+            const code = pre.querySelector('code')?.innerText ?? pre.innerText;
+            try {
+              await navigator.clipboard.writeText(code);
+            } catch {
+              const ta = document.createElement('textarea');
+              ta.value = code;
+              ta.style.position = 'fixed'; ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.select(); document.execCommand('copy');
+              ta.remove();
+            }
+            btn.classList.add('is-copied');
+            btn.innerHTML = CHECK_SVG;
+            setTimeout(() => {
+              btn.classList.remove('is-copied');
+              btn.innerHTML = COPY_SVG;
+            }, 1400);
+          });
+          pre.appendChild(btn);
+        });
+      })();
+    </script>
   </body>
 </html>

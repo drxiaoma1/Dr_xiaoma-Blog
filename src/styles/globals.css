@@ -71,4 +71,41 @@
 }
 .prose :where(h1, h2, h3, h4) { font-family: theme('fontFamily.display'); letter-spacing: -0.03em; }
 .prose :where(p, li) { font-family: theme('fontFamily.serif'); }
-.prose :where(pre) { border: 1px solid theme('colors.paper.edge'); }
+.prose :where(pre) { border: 1px solid theme('colors.paper.edge'); position: relative; }
+
+.prose pre .copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid theme('colors.paper.edge');
+  background: theme('colors.paper.card');
+  color: theme('colors.ink.mute');
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity .15s ease, transform .15s ease, color .15s ease, border-color .15s ease, background .15s ease;
+}
+.prose pre:hover .copy-btn,
+.prose pre .copy-btn:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+.prose pre .copy-btn:hover {
+  color: theme('colors.accent.DEFAULT');
+  border-color: theme('colors.accent.DEFAULT');
+}
+.prose pre .copy-btn.is-copied {
+  opacity: 1;
+  color: theme('colors.accent.DEFAULT');
+  border-color: theme('colors.accent.DEFAULT');
+  background: theme('colors.accent.soft');
+}
+@media (max-width: 640px) {
+  .prose pre .copy-btn { opacity: 1; transform: none; }
+}
