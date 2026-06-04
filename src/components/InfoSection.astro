@@ -2,7 +2,7 @@
 interface Props { title: string; index: string; empty?: string }
 const { title, index, empty = '暂未填写。' } = Astro.props;
 ---
-<section class="card group">
+<section class="card group transition-transform duration-300 hover:scale-105">
   <div class="flex items-baseline justify-between gap-4 mb-5">
     <div class="flex items-baseline gap-3">
       <span class="num text-lg leading-none">{index}</span>

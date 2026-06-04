@@ -1,0 +1,156 @@
+---
+// Chrome 小恐龙游戏风格背景动画
+---
+<div class="dino-bg" aria-hidden="true">
+  <div class="dino-horizon"></div>
+  <div class="dino-cloud dino-cloud-1"></div>
+  <div class="dino-cloud dino-cloud-2"></div>
+  <div class="dino-cloud dino-cloud-3"></div>
+  <div class="dino-cactus dino-cactus-1"></div>
+  <div class="dino-cactus dino-cactus-2"></div>
+</div>
+
+<style>
+.dino-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.15;
+}
+
+.dino-horizon {
+  position: absolute;
+  bottom: 20%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    currentColor 0,
+    currentColor 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  color: var(--color-ink-mute, #8b7968);
+  animation: dino-scroll 8s linear infinite;
+}
+
+.dino-cloud {
+  position: absolute;
+  width: 60px;
+  height: 20px;
+  background: currentColor;
+  color: var(--color-ink-mute, #8b7968);
+  border-radius: 20px;
+  animation: dino-cloud-move 25s linear infinite;
+}
+
+.dino-cloud::before,
+.dino-cloud::after {
+  content: '';
+  position: absolute;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.dino-cloud::before {
+  width: 30px;
+  height: 30px;
+  top: -15px;
+  left: 10px;
+}
+
+.dino-cloud::after {
+  width: 25px;
+  height: 25px;
+  top: -12px;
+  right: 10px;
+}
+
+.dino-cloud-1 {
+  top: 15%;
+  left: -80px;
+  animation-delay: 0s;
+}
+
+.dino-cloud-2 {
+  top: 25%;
+  left: -80px;
+  animation-delay: 8s;
+  transform: scale(0.8);
+}
+
+.dino-cloud-3 {
+  top: 35%;
+  left: -80px;
+  animation-delay: 16s;
+  transform: scale(1.1);
+}
+
+.dino-cactus {
+  position: absolute;
+  bottom: calc(20% + 2px);
+  width: 12px;
+  height: 40px;
+  background: currentColor;
+  color: var(--color-ink-mute, #8b7968);
+  animation: dino-cactus-move 12s linear infinite;
+}
+
+.dino-cactus::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 20px;
+  background: currentColor;
+  left: -8px;
+  top: 10px;
+}
+
+.dino-cactus::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 15px;
+  background: currentColor;
+  right: -8px;
+  top: 8px;
+}
+
+.dino-cactus-1 {
+  right: -40px;
+  animation-delay: 0s;
+}
+
+.dino-cactus-2 {
+  right: -40px;
+  animation-delay: 6s;
+  transform: scaleX(-1);
+}
+
+@keyframes dino-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-16px); }
+}
+
+@keyframes dino-cloud-move {
+  0% { left: -80px; }
+  100% { left: 100%; }
+}
+
+@keyframes dino-cactus-move {
+  0% { right: -40px; }
+  100% { right: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dino-bg * {
+    animation-play-state: paused !important;
+  }
+}
+</style>

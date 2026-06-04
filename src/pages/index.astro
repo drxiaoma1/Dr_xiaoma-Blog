@@ -2,9 +2,11 @@
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import Hero from '~/components/Hero.astro';
 import InfoSection from '~/components/InfoSection.astro';
+import DinoBackground from '~/components/DinoBackground.astro';
 import { profile } from '~/data/profile';
 ---
 <BaseLayout title={profile.name || '主页'} description={profile.bio}>
+  <DinoBackground />
   <Hero />
 
   <section class="container-wide py-16 max-w-3xl">
@@ -49,23 +51,6 @@ import { profile } from '~/data/profile';
           {profile.hobbies.length === 0 ? null : (
             <ul class="flex flex-wrap gap-2">
               {profile.hobbies.map(h => <li class="pill">{h}</li>)}
-            </ul>
-          )}
-        </InfoSection>
-      </div>
-
-      <div class="reveal reveal-4">
-        <InfoSection title="联系方式" index="IV.">
-          {profile.contacts.length === 0 ? null : (
-            <ul class="divide-y divide-paper-edge">
-              {profile.contacts.map(c => (
-                <li class="flex items-baseline justify-between py-2.5 first:pt-0 last:pb-0 gap-4">
-                  <span class="eyebrow">{c.type}</span>
-                  {c.link
-                    ? <a href={c.link} class="font-display italic text-lg tracking-tightest text-right break-all">{c.value}</a>
-                    : <span class="font-display italic text-lg text-ink tracking-tightest text-right break-all">{c.value}</span>}
-                </li>
-              ))}
             </ul>
           )}
         </InfoSection>

@@ -9,14 +9,13 @@ const issue = String(today.getFullYear() - 2020).padStart(2, '0');
 ---
 <section class="container-wide pt-16 pb-12 border-b border-paper-edge">
   <div class="flex items-center justify-between text-xs text-ink-mute uppercase tracking-[0.22em] font-sans reveal reveal-1">
-    <span>Issue №{issue}</span>
-    <span class="hidden sm:inline">{dateStr}</span>
+    <span id="hero-time">—</span>
     <span>{profile.location}</span>
   </div>
 
   <div class="mt-10 grid grid-cols-1 md:grid-cols-12 gap-10 items-end">
     <div class="md:col-span-3 reveal reveal-2">
-      <div class="relative inline-block">
+      <div class="relative inline-block transition-transform duration-300 hover:scale-105">
         <img
           src={avatarPng}
           alt={profile.name}
@@ -24,7 +23,6 @@ const issue = String(today.getFullYear() - 2020).padStart(2, '0');
           class="w-44 h-44 md:w-52 md:h-52 rounded-full object-cover border border-paper-edge grayscale-[0.08] shadow-[0_2px_24px_rgba(26,23,20,0.08)]"
           onerror={`if (this.src.endsWith('png')) this.src='${avatarSvg}'; else this.onerror=null;`}
         />
-        <span class="absolute -bottom-2 -right-2 bg-paper-card border border-paper-edge px-2 py-0.5 num text-[11px] text-ink-soft">01</span>
       </div>
     </div>
 
@@ -42,3 +40,20 @@ const issue = String(today.getFullYear() - 2020).padStart(2, '0');
     </div>
   </div>
 </section>
+<script is:inline>
+  (() => {
+    const el = document.getElementById('hero-time');
+    if (!el) return;
+    const update = () => {
+      const now = new Date();
+      const bjTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+      const weekday = bjTime.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Asia/Shanghai' });
+      const month = bjTime.toLocaleDateString('en-US', { month: 'long', timeZone: 'Asia/Shanghai' });
+      const day = bjTime.getDate();
+      const year = bjTime.getFullYear();
+      el.textContent = `${weekday}, ${month} ${day}, ${year}`;
+    };
+    update();
+    setInterval(update, 60000);
+  })();
+</script>
