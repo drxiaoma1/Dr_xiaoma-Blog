@@ -1,0 +1,258 @@
+---
+import { url } from '~/utils/url';
+import { profile } from '~/data/profile';
+const avatarSrc = url(profile.avatar);
+const avatarFallback = url(profile.avatarFallback);
+const navLinks = [
+  { href: url('/'), label: '主页' },
+  { href: url('/blog'), label: '博客' },
+  { href: url('/data'), label: '数据' },
+];
+---
+
+<div id="splash" class="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" style="background:#f4efe6">
+  <!-- Snake canvas (背景层) -->
+  <canvas id="snake-canvas" class="absolute inset-0 w-full h-full" style="opacity:0.18"></canvas>
+
+  <!-- 中央内容层 -->
+  <div id="splash-content" class="relative z-10 flex flex-col items-center gap-8 px-6 text-center">
+    <img
+      id="splash-avatar"
+      src={avatarSrc}
+      alt={profile.name}
+      width="120" height="120"
+      class="w-28 h-28 rounded-full object-cover border border-paper-edge shadow-[0_2px_24px_rgba(26,23,20,0.10)] grayscale-[0.08]"
+      onerror={`if(this.src.endsWith('png'))this.src='${avatarFallback}';else this.onerror=null;`}
+    />
+    <div>
+      <p class="font-display italic text-[clamp(2.2rem,6vw,4rem)] leading-none tracking-tightest text-ink"
+         style="font-variation-settings:'opsz' 96,'SOFT' 30">{profile.name}</p>
+      <p class="mt-2 text-sm text-ink-mute uppercase tracking-[0.2em]">@{profile.handle}</p>
+    </div>
+    <nav id="splash-nav" class="flex gap-4">
+      {navLinks.map(l => (
+        <a href={l.href}
+           class="px-5 py-2 border border-paper-edge text-ink-soft text-sm no-underline hover:text-ink hover:border-ink/40 transition-colors">
+          {l.label}
+        </a>
+      ))}
+    </nav>
+    <p id="splash-hint" class="text-[11px] text-ink-mute uppercase tracking-[0.18em] mt-2 transition-opacity duration-500">
+      按方向键控制贪吃蛇 · 点击任意链接进入
+    </p>
+  </div>
+</div>
+
+<script is:inline>
+(() => {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+
+  // ── 贪吃蛇配置 ──
+  const CELL = 20;
+  const canvas = document.getElementById('snake-canvas');
+  const ctx = canvas.getContext('2d');
+  const SNAKE_COLOR = '#7a2e1e';
+  const FOOD_COLOR  = '#3b5bdb';
+
+  let cols, rows, snake, dir, nextDir, food, score, autoMode, gameOver, animFrame;
+  let deathParticles = [];   // 死亡动画用
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.floor(canvas.width  / CELL);
+    rows = Math.floor(canvas.height / CELL);
+  }
+
+  // 获取禁区格子（头像 + 导航按钮区域）
+  function getForbiddenCells() {
+    const forbidden = new Set();
+    const els = [
+      document.getElementById('splash-avatar'),
+      document.getElementById('splash-nav'),
+    ];
+    for (const el of els) {
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      // 扩一格 padding
+      const c0 = Math.floor((r.left   - CELL) / CELL);
+      const c1 = Math.ceil( (r.right  + CELL) / CELL);
+      const r0 = Math.floor((r.top    - CELL) / CELL);
+      const r1 = Math.ceil( (r.bottom + CELL) / CELL);
+      for (let c = c0; c <= c1; c++)
+        for (let r = r0; r <= r1; r++)
+          forbidden.add(`${c},${r}`);
+    }
+    return forbidden;
+  }
+
+  function spawnFood() {
+    const forbidden = getForbiddenCells();
+    const occupied  = new Set(snake.map(s => `${s.x},${s.y}`));
+    const candidates = [];
+    for (let x = 0; x < cols; x++)
+      for (let y = 0; y < rows; y++)
+        if (!forbidden.has(`${x},${y}`) && !occupied.has(`${x},${y}`))
+          candidates.push({ x, y });
+    if (!candidates.length) return { x: 0, y: 0 };
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  function init() {
+    gameOver   = false;
+    autoMode   = true;
+    deathParticles = [];
+    score      = 0;
+    const cx   = Math.floor(cols / 2);
+    const cy   = Math.floor(rows / 2);
+    snake      = [{ x: cx, y: cy }, { x: cx - 1, y: cy }, { x: cx - 2, y: cy }];
+    dir        = { x: 1, y: 0 };
+    nextDir    = { x: 1, y: 0 };
+    food       = spawnFood();
+  }
+
+  // 自动驾驶：简单寻路（向食物方向优先，避墙避身）
+  function autoStep() {
+    const head = snake[0];
+    const candidates = [
+      { x:  0, y: -1 }, { x:  0, y:  1 },
+      { x: -1, y:  0 }, { x:  1, y:  0 },
+    ].filter(d => !(d.x === -dir.x && d.y === -dir.y));
+
+    const safe = candidates.filter(d => {
+      const nx = (head.x + d.x + cols) % cols;
+      const ny = (head.y + d.y + rows) % rows;
+      return !snake.slice(0, -1).some(s => s.x === nx && s.y === ny);
+    });
+    if (!safe.length) return;
+    // 优先选离食物近的
+    safe.sort((a, b) => {
+      const da = Math.abs(head.x + a.x - food.x) + Math.abs(head.y + a.y - food.y);
+      const db = Math.abs(head.x + b.x - food.x) + Math.abs(head.y + b.y - food.y);
+      return da - db;
+    });
+    dir = safe[0];
+    nextDir = dir;
+  }
+
+  function step() {
+    if (gameOver) return;
+    if (autoMode) autoStep();
+    else dir = nextDir;
+
+    const head = snake[0];
+    const nx = (head.x + dir.x + cols) % cols;
+    const ny = (head.y + dir.y + rows) % rows;
+
+    // 撞自身（自动模式不会死，玩家模式会）
+    if (!autoMode && snake.some(s => s.x === nx && s.y === ny)) {
+      startDeathAnim();
+      return;
+    }
+
+    const ate = nx === food.x && ny === food.y;
+    snake.unshift({ x: nx, y: ny });
+    if (ate) { score++; food = spawnFood(); }
+    else snake.pop();
+  }
+
+  // ── 死亡动画 ──
+  function startDeathAnim() {
+    gameOver = true;
+    deathParticles = snake.map(s => ({ x: s.x, y: s.y, alpha: 1 }));
+    snake = [];
+    animateDeath();
+  }
+
+  function animateDeath() {
+    let alive = deathParticles.some(p => p.alpha > 0);
+    deathParticles.forEach(p => { p.alpha = Math.max(0, p.alpha - 0.04); });
+    draw();
+    if (alive) requestAnimationFrame(animateDeath);
+    else { init(); }
+  }
+
+  // ── 绘制 ──
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 蛇
+    snake.forEach((s, i) => {
+      ctx.globalAlpha = i === 0 ? 0.9 : 0.65;
+      ctx.fillStyle = SNAKE_COLOR;
+      ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2);
+    });
+    // 死亡粒子
+    deathParticles.forEach(p => {
+      ctx.globalAlpha = p.alpha * 0.7;
+      ctx.fillStyle = SNAKE_COLOR;
+      ctx.fillRect(p.x * CELL + 1, p.y * CELL + 1, CELL - 2, CELL - 2);
+    });
+    // 食物
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = FOOD_COLOR;
+    ctx.fillRect(food.x * CELL + 3, food.y * CELL + 3, CELL - 6, CELL - 6);
+    ctx.globalAlpha = 1;
+  }
+
+  // ── 游戏循环 ──
+  let lastTime = 0;
+  const INTERVAL_AUTO = 120;
+  const INTERVAL_PLAYER = 150;
+
+  function loop(ts) {
+    animFrame = requestAnimationFrame(loop);
+    if (gameOver) return;
+    const interval = autoMode ? INTERVAL_AUTO : INTERVAL_PLAYER;
+    if (ts - lastTime >= interval) {
+      lastTime = ts;
+      step();
+      draw();
+    }
+  }
+
+  // ── 键盘 ──
+  const KEY_MAP = {
+    ArrowUp:    { x:  0, y: -1 },
+    ArrowDown:  { x:  0, y:  1 },
+    ArrowLeft:  { x: -1, y:  0 },
+    ArrowRight: { x:  1, y:  0 },
+    w: { x: 0, y: -1 }, W: { x: 0, y: -1 },
+    s: { x: 0, y:  1 }, S: { x: 0, y:  1 },
+    a: { x: -1, y: 0 }, A: { x: -1, y: 0 },
+    d: { x:  1, y: 0 }, D: { x:  1, y: 0 },
+  };
+
+  document.addEventListener('keydown', e => {
+    const d = KEY_MAP[e.key];
+    if (d) {
+      // 不能反向
+      if (d.x === -dir.x && d.y === -dir.y) return;
+      nextDir = d;
+      if (autoMode) {
+        autoMode = false;
+        const hint = document.getElementById('splash-hint');
+        if (hint) hint.style.opacity = '0';
+      }
+    }
+  });
+
+  // ── 启动 ──
+  resize();
+  window.addEventListener('resize', () => { resize(); if (!gameOver) init(); });
+  init();
+  requestAnimationFrame(loop);
+
+  // 点击导航链接：淡出后跳转
+  splash.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const href = a.getAttribute('href');
+      cancelAnimationFrame(animFrame);
+      splash.style.transition = 'opacity 0.35s';
+      splash.style.opacity = '0';
+      setTimeout(() => { window.location.href = href; }, 350);
+    });
+  });
+})();
+</script>
