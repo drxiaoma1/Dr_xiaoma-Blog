@@ -24,7 +24,7 @@ const games = [
   { name: "Cuphead",                                   hours: 17.6,   lastPlayed: "2025-04", genre: "平台动作" },
   { name: "雀魂麻将",                                 hours: 15.9,   lastPlayed: "2024-04", genre: "麻将" },
   { name: "Hades II",                                  hours: 14.6,   lastPlayed: "2026-01", genre: "Roguelike" },
-  { name: "魔法少女的魔女审判",                       hours: 13.4,   lastPlayed: "2025-10", genre: "策略" },
+  { name: "魔法少女的魔女审判",                       hours: 13.4,   lastPlayed: "2025-10", genre: "文字" },
   { name: "动物迷城",                                 hours: 12.3,   lastPlayed: "2025-08", genre: "休闲模拟" },
   { name: "Hollow Knight",                             hours: 8.4,    lastPlayed: "2025-10", genre: "平台动作" },
   { name: "地狱黑杰克 Black Jacket",                  hours: 3.4,    lastPlayed: "2026-05", genre: "Roguelike卡牌" },
@@ -64,10 +64,9 @@ const COLORS: Record<string, string> = {
   "平台动作":      "#d63939",
   "格斗":          "#9c36b5",
   "麻将":          "#b5630c",
+  "文字":          "#e64980",
   "生存沙盒":      "#2b8a3e",
 };
-
-// 为环形图计算 SVG 路径
 const R = 130;   // 外半径
 const r = 72;    // 内半径
 const CX = 180;  // 圆心 x
@@ -251,12 +250,12 @@ for (const d of genreData) {
   };
 
   arcEls.forEach((el, i) => {
-    el.addEventListener('click', () => activate(i));
-    el.addEventListener('mouseenter', () => { if (active < 0) el.style.opacity = '1'; });
-    el.addEventListener('mouseleave', () => { if (active < 0) el.style.opacity = '0.85'; });
+    el.addEventListener('mouseenter', () => activate(i));
+    el.addEventListener('mouseleave', deactivate);
   });
   legendBtns.forEach((btn, i) => {
-    btn.addEventListener('click', () => activate(i));
+    btn.addEventListener('mouseenter', () => activate(i));
+    btn.addEventListener('mouseleave', deactivate);
   });
 })();
 </script>
