@@ -1,0 +1,262 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+
+// 原始数据
+const games = [
+  { name: "虚拟桌宠模拟器",                          hours: 292.0,  lastPlayed: "2024-10", genre: "休闲模拟" },
+  { name: "猎杀：对决 1896",                          hours: 233.1,  lastPlayed: "2026-04", genre: "战斗射击" },
+  { name: "Sid Meier's Civilization VI",               hours: 184.4,  lastPlayed: "2025-10", genre: "策略" },
+  { name: "The Binding of Isaac: Rebirth",             hours: 179.1,  lastPlayed: "2025-01", genre: "Roguelike" },
+  { name: "Slay the Spire 2",                          hours: 152.1,  lastPlayed: "2026-05", genre: "Roguelike卡牌" },
+  { name: "战地风云 5",                               hours: 105.1,  lastPlayed: "2024-09", genre: "战斗射击" },
+  { name: "Grand Theft Auto V 增强版",                hours: 70.0,   lastPlayed: "2026-06", genre: "动作冒险" },
+  { name: "天国：拯救 2",                             hours: 54.5,   lastPlayed: "2026-01", genre: "动作RPG" },
+  { name: "Hollow Knight: Silksong",                   hours: 53.2,   lastPlayed: "2025-10", genre: "平台动作" },
+  { name: "逃离鸭科夫",                               hours: 49.3,   lastPlayed: "2025-11", genre: "战斗射击" },
+  { name: "Slay the Spire",                            hours: 48.7,   lastPlayed: "2025-11", genre: "Roguelike卡牌" },
+  { name: "Battlefield 1",                             hours: 45.7,   lastPlayed: "2026-03", genre: "战斗射击" },
+  { name: "Street Fighter 6",                          hours: 31.2,   lastPlayed: "2026-05", genre: "格斗" },
+  { name: "Downfall - A Slay the Spire Fan Expansion", hours: 24.1,   lastPlayed: "2024-07", genre: "Roguelike卡牌" },
+  { name: "黑神话：悟空",                             hours: 23.8,   lastPlayed: "2024-08", genre: "动作RPG" },
+  { name: "战地风云 6",                               hours: 20.9,   lastPlayed: "2025-10", genre: "战斗射击" },
+  { name: "喵喵的结合",                               hours: 20.7,   lastPlayed: "2026-02", genre: "麻将" },
+  { name: "ARC Raiders",                               hours: 18.9,   lastPlayed: "2026-04", genre: "战斗射击" },
+  { name: "Cuphead",                                   hours: 17.6,   lastPlayed: "2025-04", genre: "平台动作" },
+  { name: "雀魂麻将",                                 hours: 15.9,   lastPlayed: "2024-04", genre: "麻将" },
+  { name: "Hades II",                                  hours: 14.6,   lastPlayed: "2026-01", genre: "Roguelike" },
+  { name: "魔法少女的魔女审判",                       hours: 13.4,   lastPlayed: "2025-10", genre: "策略" },
+  { name: "动物迷城",                                 hours: 12.3,   lastPlayed: "2025-08", genre: "休闲模拟" },
+  { name: "Hollow Knight",                             hours: 8.4,    lastPlayed: "2025-10", genre: "平台动作" },
+  { name: "地狱黑杰克 Black Jacket",                  hours: 3.4,    lastPlayed: "2026-05", genre: "Roguelike卡牌" },
+  { name: "Terraria",                                  hours: 2.7,    lastPlayed: "2025-10", genre: "生存沙盒" },
+];
+
+// 按最后游玩时间排序（时间轴用倒序）
+const timelineSorted = [...games].sort((a, b) => b.lastPlayed.localeCompare(a.lastPlayed));
+
+// 按类型聚合（环形图用）
+const genreMap = new Map<string, { hours: number; games: typeof games }>();
+for (const g of games) {
+  const e = genreMap.get(g.genre) ?? { hours: 0, games: [] };
+  e.hours = Math.round((e.hours + g.hours) * 10) / 10;
+  e.games.push(g);
+  genreMap.set(g.genre, e);
+}
+const totalHours = games.reduce((s, g) => s + g.hours, 0);
+const genreData = [...genreMap.entries()]
+  .map(([genre, { hours, games: gs }]) => ({
+    genre,
+    hours,
+    pct: Math.round((hours / totalHours) * 1000) / 10,
+    games: gs.sort((a, b) => b.hours - a.hours),
+  }))
+  .sort((a, b) => b.hours - a.hours);
+
+// 每个类别的颜色
+const COLORS: Record<string, string> = {
+  "Roguelike卡牌": "#7a2e1e",
+  "战斗射击":      "#3b5bdb",
+  "策略":          "#2f9e44",
+  "Roguelike":    "#e8590c",
+  "休闲模拟":      "#c5a012",
+  "动作冒险":      "#6741d9",
+  "动作RPG":       "#0c8599",
+  "平台动作":      "#d63939",
+  "格斗":          "#9c36b5",
+  "麻将":          "#b5630c",
+  "生存沙盒":      "#2b8a3e",
+};
+
+// 为环形图计算 SVG 路径
+const R = 130;   // 外半径
+const r = 72;    // 内半径
+const CX = 180;  // 圆心 x
+const CY = 180;  // 圆心 y
+
+type Arc = { genre: string; hours: number; pct: number; path: string; labelX: number; labelY: number; color: string; games: typeof games };
+const arcs: Arc[] = [];
+let angle = -Math.PI / 2; // 从顶部开始
+for (const d of genreData) {
+  const sweep = (d.hours / totalHours) * 2 * Math.PI;
+  const startA = angle;
+  const endA   = angle + sweep;
+  const x1 = CX + R * Math.cos(startA);
+  const y1 = CY + R * Math.sin(startA);
+  const x2 = CX + R * Math.cos(endA);
+  const y2 = CY + R * Math.sin(endA);
+  const xi1 = CX + r * Math.cos(startA);
+  const yi1 = CY + r * Math.sin(startA);
+  const xi2 = CX + r * Math.cos(endA);
+  const yi2 = CY + r * Math.sin(endA);
+  const large = sweep > Math.PI ? 1 : 0;
+  const path = `M ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${r} ${r} 0 ${large} 0 ${xi1} ${yi1} Z`;
+  const midA = startA + sweep / 2;
+  const labelR = R + 22;
+  arcs.push({
+    genre: d.genre,
+    hours: d.hours,
+    pct: d.pct,
+    path,
+    labelX: CX + labelR * Math.cos(midA),
+    labelY: CY + labelR * Math.sin(midA),
+    color: COLORS[d.genre] ?? "#888",
+    games: d.games,
+  });
+  angle = endA;
+}
+---
+<BaseLayout title="游戏数据" description="Steam 游戏时长与类别可视化">
+  <section class="container-wide pt-16 pb-12 border-b border-paper-edge">
+    <p class="eyebrow reveal reveal-1">Data</p>
+    <h1 class="mt-3 font-display text-[clamp(2.5rem,6vw,5rem)] leading-none tracking-tightest reveal reveal-2"
+        style="font-variation-settings:'opsz' 144,'SOFT' 30">
+      Steam Archive
+    </h1>
+    <p class="mt-4 text-ink-soft max-w-xl reveal reveal-3">
+      {games.length} 款游戏 · 共 {Math.round(totalHours)} 小时
+    </p>
+  </section>
+
+  <!-- 时间轴 -->
+  <section class="container-wide py-12 max-w-3xl">
+    <h2 class="eyebrow mb-8">Timeline · 最后游玩时间</h2>
+    <ol class="relative border-l border-paper-edge space-y-0">
+      {timelineSorted.map((g, i) => (
+        <li class="pl-6 pb-6 relative reveal" style={`animation-delay:${0.03 + i * 0.025}s`}>
+          <span class="absolute -left-[5px] top-1.5 w-[10px] h-[10px] rounded-full border-2 border-paper-edge"
+                style={`background-color:${COLORS[g.genre] ?? '#888'}`}></span>
+          <div class="flex items-baseline justify-between gap-4 flex-wrap">
+            <span class="font-display text-lg text-ink tracking-tightest">{g.name}</span>
+            <span class="num text-xs text-ink-mute whitespace-nowrap">{g.lastPlayed}</span>
+          </div>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="text-xs px-2 py-0.5 border border-paper-edge text-ink-mute"
+                  style={`border-color:${COLORS[g.genre] ?? '#888'}30; color:${COLORS[g.genre] ?? '#888'}`}>
+              {g.genre}
+            </span>
+            <span class="num text-xs text-ink-mute">{g.hours}h</span>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <!-- 环形图 -->
+  <section class="container-wide py-12 border-t border-paper-edge">
+    <h2 class="eyebrow mb-8">Genre Distribution · 游戏类别时长分布</h2>
+    <div class="flex flex-col lg:flex-row gap-10 items-start">
+      <!-- SVG 环形图 -->
+      <div class="relative flex-shrink-0">
+        <svg id="donut" width="360" height="360" viewBox="0 0 360 360" class="block">
+          {arcs.map((a, i) => (
+            <path
+              id={`arc-${i}`}
+              d={a.path}
+              fill={a.color}
+              opacity="0.85"
+              class="donut-arc cursor-pointer transition-all duration-200"
+              data-index={i}
+            />
+          ))}
+          <!-- 中央文字 -->
+          <text id="donut-center-label" x={CX} y={CY - 10} text-anchor="middle"
+                class="donut-center-text font-bold" style="font-size:13px; fill:#1a1714">
+            —
+          </text>
+          <text id="donut-center-hours" x={CX} y={CY + 12} text-anchor="middle"
+                style="font-size:22px; font-weight:700; fill:#1a1714">
+            {Math.round(totalHours)}h
+          </text>
+          <text id="donut-center-pct" x={CX} y={CY + 30} text-anchor="middle"
+                style="font-size:11px; fill:#807872">
+            总时长
+          </text>
+        </svg>
+      </div>
+
+      <!-- 图例 + 详情卡片 -->
+      <div class="flex-1 min-w-0">
+        <!-- 图例 -->
+        <ul class="grid grid-cols-2 gap-2 text-sm">
+          {genreData.map((d, i) => (
+            <li>
+              <button
+                class="flex items-center gap-2 w-full text-left hover:opacity-80 transition-opacity donut-legend-btn"
+                data-index={i}
+              >
+                <span class="w-3 h-3 flex-shrink-0 rounded-sm" style={`background:${COLORS[d.genre] ?? '#888'}`}></span>
+                <span class="text-ink-soft truncate">{d.genre}</span>
+                <span class="num text-xs text-ink-mute ml-auto whitespace-nowrap">{d.pct}%</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <!-- 详情卡片 -->
+        <div id="genre-detail" class="mt-6 p-5 border border-paper-edge bg-paper-card hidden">
+          <div class="flex items-baseline justify-between gap-4 mb-4">
+            <h3 id="detail-genre" class="font-display text-xl tracking-tightest"></h3>
+            <span id="detail-hours" class="num text-sm text-ink-mute"></span>
+          </div>
+          <ul id="detail-games" class="space-y-2 text-sm"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script define:vars={{ arcs, totalHours }}>
+(() => {
+  const arcEls     = document.querySelectorAll('.donut-arc');
+  const legendBtns = document.querySelectorAll('.donut-legend-btn');
+  const detail     = document.getElementById('genre-detail');
+  const detailGenre = document.getElementById('detail-genre');
+  const detailHours = document.getElementById('detail-hours');
+  const detailGames = document.getElementById('detail-games');
+  const centerLabel = document.getElementById('donut-center-label');
+  const centerHours = document.getElementById('donut-center-hours');
+  const centerPct   = document.getElementById('donut-center-pct');
+  let active = -1;
+
+  const activate = (i) => {
+    if (i === active) { deactivate(); return; }
+    active = i;
+    arcEls.forEach((el, j) => {
+      el.style.opacity = j === i ? '1' : '0.3';
+      el.style.transform = j === i ? `scale(1.05)` : '';
+      el.style.transformOrigin = '180px 180px';
+    });
+    const a = arcs[i];
+    centerLabel.textContent = a.genre;
+    centerHours.textContent = a.hours + 'h';
+    centerPct.textContent   = a.pct + '%';
+    detailGenre.textContent = a.genre;
+    detailHours.textContent = `${a.hours}h · ${a.pct}%`;
+    detailGames.innerHTML = a.games.map(g =>
+      `<li class="flex justify-between gap-4 border-b border-paper-edge last:border-0 pb-2 last:pb-0">
+        <span class="text-ink-soft">${g.name}</span>
+        <span class="num text-xs text-ink-mute whitespace-nowrap">${g.hours}h · ${Math.round(g.hours / a.hours * 100)}%</span>
+       </li>`
+    ).join('');
+    detail.classList.remove('hidden');
+  };
+
+  const deactivate = () => {
+    active = -1;
+    arcEls.forEach(el => { el.style.opacity = '0.85'; el.style.transform = ''; });
+    centerLabel.textContent = '—';
+    centerHours.textContent = Math.round(totalHours) + 'h';
+    centerPct.textContent   = '总时长';
+    detail.classList.add('hidden');
+  };
+
+  arcEls.forEach((el, i) => {
+    el.addEventListener('click', () => activate(i));
+    el.addEventListener('mouseenter', () => { if (active < 0) el.style.opacity = '1'; });
+    el.addEventListener('mouseleave', () => { if (active < 0) el.style.opacity = '0.85'; });
+  });
+  legendBtns.forEach((btn, i) => {
+    btn.addEventListener('click', () => activate(i));
+  });
+})();
+</script>

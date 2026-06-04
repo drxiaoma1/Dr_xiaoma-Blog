@@ -14,7 +14,7 @@ export const profile = {
     {
       school: '上海交通大学',
       degree: '智能感知工程',
-      period: '2022 - 2026',
+      period: '2023 - 2027',
       detail: '自动化与感知学院 · 本科生 · 大三'
     }
   ] as Education[],
