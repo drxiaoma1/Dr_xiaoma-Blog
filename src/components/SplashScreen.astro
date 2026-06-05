@@ -6,6 +6,7 @@ const avatarFallback = url(profile.avatarFallback);
 const navLinks = [
   { href: url('/'),      label: '主页', icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>` },
   { href: url('/blog'),  label: '博客', icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>` },
+  { href: url('/tags'),  label: '标签', icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>` },
   { href: url('/data'),  label: '数据', icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>` },
 ];
 ---
@@ -47,6 +48,12 @@ const navLinks = [
 (() => {
   const splash = document.getElementById('splash');
   if (!splash) return;
+
+  // 已经从启动页导航出去过，直接隐藏
+  if (sessionStorage.getItem('splash_done')) {
+    splash.remove();
+    return;
+  }
 
   const CELL = 18;
   const GROW = 4;           // 吃一个食物增加的节数
@@ -95,15 +102,18 @@ const navLinks = [
     return forbidden;
   }
 
+  // 食物刷新范围：限制在场地中央 60% 区域内
   function spawnFood() {
     const forbidden = getForbiddenCells();
     const occupied  = new Set(snake.map(s => `${s.x},${s.y}`));
+    const xMin = Math.floor(cols * 0.2), xMax = Math.floor(cols * 0.8);
+    const yMin = Math.floor(rows * 0.2), yMax = Math.floor(rows * 0.8);
     const candidates = [];
-    for (let x = 0; x < cols; x++)
-      for (let y = 0; y < rows; y++)
+    for (let x = xMin; x < xMax; x++)
+      for (let y = yMin; y < yMax; y++)
         if (!forbidden.has(`${x},${y}`) && !occupied.has(`${x},${y}`))
           candidates.push({ x, y });
-    if (!candidates.length) return { x: 0, y: 0 };
+    if (!candidates.length) return { x: Math.floor(cols/2), y: Math.floor(rows/2) };
     return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
@@ -290,6 +300,7 @@ const navLinks = [
       e.preventDefault();
       const href = a.getAttribute('href');
       cancelAnimationFrame(animFrame);
+      sessionStorage.setItem('splash_done', '1');
       splash.style.transition = 'opacity 0.35s';
       splash.style.opacity = '0';
       setTimeout(() => { window.location.href = href; }, 350);
