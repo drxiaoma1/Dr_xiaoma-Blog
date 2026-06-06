@@ -6,3 +6,7 @@ dist
 .DS_Store
 pnpm-debug.log*
 src/content/drafts/
+
+# 报告相关文件（不上传至 GitHub）
+documents/
+references/
